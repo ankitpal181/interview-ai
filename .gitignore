@@ -1,0 +1,13 @@
+# General
+__pycache__
+.pytest_cache/
+.env
+
+# Python build artifacts
+dist/
+build/
+*.egg-info/
+
+# Python virtual environment (optional, but recommended)
+interview-ai-env/
+.python-version
