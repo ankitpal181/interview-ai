@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 from typing import List
@@ -6,16 +7,39 @@ from ..core.cache import cache
 from ..core.utilities import load_interview_rules, load_cache
 from ..servers import interviewbot
 from langgraph.types import Command
+from langchain_core.messages import HumanMessage
 
 
 class InterviewClient:
+    """
+    InterviewClient is a class that provides a simple interface to interact with the interviewbot.
+    """
     def __init__(self, interview_format: str = "coding") -> None:
+        """
+        Initialize the InterviewClient with the given interview format.
+
+        Args:
+            interview_format (str): The interview format to be used.
+
+        Returns:
+            None
+        """
         self.interview_rules = load_interview_rules(interview_format)
         self.max_questions = self.interview_rules.get(
             "no_of_questions", 10
         ) + settings.max_intro_questions
 
     def _check_answer_expiry(self, user_message: str, last_updated: str) -> str:
+        """
+        Check if the answer is expired.
+
+        Args:
+            user_message (str): The user message to be checked.
+            last_updated (str): The last updated time of the user message.
+
+        Returns:
+            str: The user message if it is not expired, otherwise an empty string.
+        """
         if datetime.fromisoformat(last_updated) < datetime.now(timezone.utc) - timedelta(
             minutes=float(self.interview_rules.get("time_frame", 0)), seconds=float(5)
         ):
@@ -23,10 +47,16 @@ class InterviewClient:
         return user_message
 
     def start(self) -> dict:
+        """
+        Start the interview.
+
+        Returns:
+            dict: The interview configuration and initial interrupt message.
+        """
         interview_id = str(uuid4())
         interview_config = {"configurable": {"thread_id": interview_id}}
         response = interviewbot.invoke({
-            "messages": [{"role": "user", "content": "Start Interview"}],
+            "messages": [HumanMessage(content="Start Interview")],
             "phase": "introduction",
             "rules": self.interview_rules
         }, interview_config)
@@ -48,6 +78,18 @@ class InterviewClient:
         }
 
     def next(self, interview_config: dict, user_message: str = "") -> dict:
+        """
+        Next step in the interview workflow. This function is the contact point to move/control
+        the interview flow and submit user messages, with a timer + 5 seconds buffer,
+        based on the interview rules.
+
+        Args:
+            interview_config (dict): The interview configuration.
+            user_message (str): The user message to be processed.
+
+        Returns:
+            dict: The next message or "__end__" if the interview is over.
+        """
         if not interview_config: raise ValueError("Interview config is required")
 
         cached_data = load_cache(interview_config['configurable']['thread_id'], interviewbot)
@@ -61,7 +103,7 @@ class InterviewClient:
             )
         else:
             response = interviewbot.invoke({
-                "messages": [{"role": "user", "content": user_message}],
+                "messages": [HumanMessage(content=user_message)],
                 "phase": "evaluation",
                 "rules": self.interview_rules
             }, interview_config)
@@ -86,33 +128,112 @@ class InterviewClient:
         ) else {"message": cached_data['last_message']['text']}
 
     def end(self, interview_config: dict, operations_map: List[dict] = []) -> dict:
+        """
+        End the interview and generate the response map containg evaluation dict and
+        operations results. Each operation details are processed using LLMs and data will be
+        generated. Keep in mind that actual emails or whatsapp messages will not be sent.
+
+        Args:
+            interview_config (dict): The interview configuration.
+            operations_map (List[dict]): The operations to be performed, supported: email, whatsapp, api.
+                                         Operation templates[can send multiple same type operations with different data]:
+                                         {
+                                            "type": "email",
+                                            "receiver_name": "Jhon Doe",
+                                            "receiver_relation_to_interview": "Candidate/Hiring Manager/HR",
+                                            "template"[optional]: "html/json_string"
+                                         }
+                                         {
+                                            "type": "whatsapp",
+                                            "receiver_name": "Jhon Doe",
+                                            "receiver_relation_to_interview": "Candidate/Hiring Manager/HR",
+                                            "template"[optional]: "html/json_string"
+                                         }
+                                         {
+                                            "type": "api",
+                                            "endpoint": "https://example.com/api",
+                                            "headers"[optional]: {
+                                                "Content-Type": "application/json"
+                                            },
+                                            "body"[Keys depends upon your api]: {
+                                                "name": "Jhon Doe",
+                                                "evaluation": "evaluation string or dict",
+                                                "good_fit_for_position"[
+                                                    use #Description# to let AI fill the actual values based on description
+                                                ]: "#Description# Name all the positions for which this candidate is good fit #Description#"
+                                            },
+                                            "attachment"[optional]: "path_to_file or use #Evaluation PDF# to attach evaluation PDF"
+                                            "method"[optional]: "default POST"
+                                         }
+
+        Returns:
+            dict: The response map containg evaluation dict and operations results.
+        """
         if not interview_config: raise ValueError("Interview config is required")
 
         cached_data = load_cache(interview_config['configurable']['thread_id'], interviewbot)
         response_map = {"evaluation": cached_data['last_message']['text']}
+        user_message = {}
 
         for operation in operations_map:
             if operation.get("type") == "email":
-                # check for name to whom email should be sent
-                # check for the reciver's relation to this interview
-                # check for email template [optional]
-                pass
+                user_message["email"] = user_message.get("email", []).append({
+                    "receiver_name": operation.get("receiver_name"),
+                    "receiver_relation_to_interview": operation.get("receiver_relation_to_interview"),
+                    "template": operation.get("template")
+                })
+                user_message["attachment"] = "Generate Evaluation PDF"
             elif operation.get("type") == "whatsapp":
-                # check for name to whom whatsapp should be sent
-                # check for the reciver's relation to this interview
-                # check for whatsapp template [optional]
-                pass
+                user_message["whatsapp"] = user_message.get("whatsapp", []).append({
+                    "receiver_name": operation.get("receiver_name"),
+                    "receiver_relation_to_interview": operation.get("receiver_relation_to_interview"),
+                    "template": operation.get("template")
+                })
+                user_message["attachment"] = "Generate Evaluation PDF"
             elif operation.get("type") == "api":
-                # check for api endpoint
-                # check for api headers
-                # check for api body template [
-                # should have values to the keys and if value to be filled by ai,
-                # then value should be a string starting with and ending with #Description#,
-                # holding the detailed description of the value to be filled by ai]
-                # check if a file needs to be uploaded [given or evaluation pdf]
-                # check for api method
-                pass
+                required_values = {"endpoint": operation.get("endpoint")}
+
+                for key, value in operation.get("body", {}).items():
+                    value = value.strip()
+
+                    if value.startswith("#Description#") and value.endswith("#Description#"):
+                        required_values[key] = value
+
+                user_message["description_value"] = user_message.get("description_value", []).append(required_values)
+
+                if operation.get("attachment", "") == "#Evaluation PDF#":
+                    user_message["attachment"] = "Generate Evaluation PDF"
         
+        # Call llm for information
+        response = interviewbot.invoke({
+            "messages": [HumanMessage(content=json.dumps(user_message))],
+            "phase": "reporting"
+        }, interview_config)
+        response_data = json.loads(response["messages"][-1].content)
+
+        for operation in operations_map:
+            if operation.get("type") == "api":
+                message_to_call_api_tool = {
+                    "endpoint": operation.get("endpoint"),
+                    "headers": operation.get("headers", {}),
+                    "body": operation.get("body", {}),
+                    "attachment": response_data["pdf"]["file_path"] if (
+                        operation.get("attachment", "") == "#Evaluation PDF#"
+                    ) else operation.get("attachment"),
+                    "method": operation.get("method", "POST")
+                }
+                message_to_call_api_tool["body"].update({
+                    pair["key"]: pair["value"] for pair in response_data["description_value"][
+                        operation.get("endpoint")
+                    ]["values"]
+                })
+
+                interviewbot.invoke({
+                    "messages": [HumanMessage(content="Call these APIs:\n"+json.dumps(message_to_call_api_tool))],
+                    "phase": "reporting"
+                }, interview_config)
+        
+        response_map["operations_results"] = response_data
         return response_map
 
 __all__ = [

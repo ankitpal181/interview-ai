@@ -124,3 +124,63 @@ INTERVIEWBOT_PROMPT = """
     **key reasons why** (e.g., "Lacks deep knowledge in Distributed Transactions," "System design lacked metrics and
     failure analysis.").
 """
+REPORTING_PROMPT_MAP = {
+    "pdf": """ - Generate a PDF report of the conversion and evaluation of the interview.
+    Keep the evaluation intact and don't try to summarise it.
+    Use pdf part of the response schema for this part's response.""",
+    "email": """ - Generate email subject and body to inform the receiver about the interview
+    for each email request by user. If user provides a template, use it for the body.
+    Use email part of the response schema for this part's response.""",
+    "whatsapp": """ - Generate whatsapp message to inform the receiver about the interview
+    for each whatsapp request by user. If user provides a template, use it for the message.
+    Use whatsapp part of the response schema for this part's response.""",
+    "description_value": """ - Generate value using given description, key name and interview data
+    for each description_value request by user. 
+    Use description_value part of the response schema for this part's response."""
+}
+REPORTING_PROMPT = """
+    You are an AI post interview analyst. Your job is to generate different information pieces based on the given
+    instructions below:
+    
+    {pdf}
+    {email}
+    {whatsapp}
+    {description_value}
+
+    Read user messages to get context of the conversation and data to be used for information generation.
+"""
+API_PROMPT = """
+    Executes an HTTP request to a specified API endpoint with customizable method, headers, body, and attachments.
+
+    **Purpose:** This tool should be used when there is a need to **trigger external webhooks, send data to 
+    third-party services, or integrate with external APIs** as part of the reporting or post-interview workflow.
+
+    ## Instructions for LLM Preparation
+
+    The LLM must perform the following steps before calling this tool:
+
+    1.  **Endpoint Identification:** Determine the target URL (endpoint) where the request should be sent.
+    2.  **Method Selection:** Choose the appropriate HTTP method (e.g., 'POST', 'PUT', 'GET', 'PATCH') based 
+        on the API's requirements and the action being performed.
+    3.  **Header Configuration:** Construct a dictionary of necessary HTTP headers (e.g., 
+        `{"Content-Type": "application/json", "Authorization": "Bearer ..."}`).
+    4.  **Body Preparation:** Synthesize and format the data to be sent in the request body. If the API 
+        expects JSON, ensure the body is structured accordingly.
+    5.  **Attachment Handling:** If a file (such as an evaluation PDF or CSV) needs to be uploaded, 
+        provide the absolute file path as the 'attachment'.
+
+    ## Arguments
+
+    :param api_details: A dictionary containing the full configuration for the API call.
+        - 'method' (str): The HTTP method to use (e.g., "POST").
+        - 'endpoint' (str): The destination URL.
+        - 'headers' (dict): A key-value pair of HTTP headers.
+        - 'body' (dict/str): The payload/data to be sent in the request.
+        - 'attachment' (str): The file path of any attachment to be included in the request.
+    :type api_details: dict
+
+    ## Returns
+
+    :returns: A dictionary containing the JSON response from the API or an error message if the call fails.
+    :rtype: dict
+"""

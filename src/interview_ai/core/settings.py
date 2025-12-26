@@ -10,6 +10,18 @@ class StorageMode(Enum):
     DATABASE = "database"
 
 class Settings(BaseSettings):
+    """
+    Settings class to load the system configurations and environment variables. 
+    
+    Attributes:
+        model_config (SettingsConfigDict): Settings configuration.
+        llm_api_key (Optional[str]): LLM API key.
+        llm_model_name (str): LLM model name.
+        storage_mode (StorageMode): Storage mode.
+        database_uri (Optional[str]): Database URI.
+        max_intro_questions (int): Maximum number of introduction questions.
+        internet_search (str): Internet search tool name.
+    """
     model_config = SettingsConfigDict()
 
     # LLM MODELS
@@ -31,6 +43,12 @@ class Settings(BaseSettings):
     internet_search: str = Field(default="duckduckgo")
 
     def __init__(self) -> None:
+        """
+        Initialize the settings class instance.
+
+        Returns:
+            None
+        """
         super().__init__()
         
         # LOAD SYSTEM CONFIGS
@@ -47,6 +65,12 @@ class Settings(BaseSettings):
         self._validate_settings()
     
     def _validate_settings(self) -> None:
+        """
+        Validate the settings values.
+
+        Returns:
+            None
+        """
         # CONFIGURATIONS VALIDATION
         if self.storage_mode == StorageMode.DATABASE.value and self.database_uri is None:
             raise ValueError("Database URI not found")

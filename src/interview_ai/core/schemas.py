@@ -58,3 +58,36 @@ class EvaluationSchema(BaseModel):
 
 class QuestionsSchema(BaseModel):
     questions: List[QuestionsItemSchema] = Field(description = "List of questions")
+
+class PDFSchema(BaseModel):
+    label: str = Field(description = "Use the value for label from the tool response")
+    file_path: str = Field(description = "Use the value for file_path from the tool response")
+    file_name: str = Field(description = "Use the value for file_name from the tool response")
+    mime: str = Field(description = "Use the value for mime from the tool response")
+
+class EmailSchema(BaseModel):
+    subject: str = Field(description = "Subject of the email")
+    body: str = Field(description = "Content of the email")
+    attachment: PDFSchema = Field(description = "PDF details of the interview")
+
+class WhatsappSchema(BaseModel):
+    message: str = Field(description = "Content of the message")
+    attachment: PDFSchema = Field(description = "PDF details of the interview")
+
+class DescriptionValueItemsSchema(BaseModel):
+    key: str = Field(description = "Key for which the description value is to be generated")
+    value: str = Field(description = "Value generated using key specific description")
+
+class DescriptionValueSchema(BaseModel):
+    endpoint: str = Field(description = "Endpoint to which this value is generated, given in user message")
+    values: List[DescriptionValueItemsSchema] = Field(description = "List of description values of the interview")
+
+class ReportingSchema(BaseModel):
+    pdf: PDFSchema = Field(description = "PDF details of the interview, if asked to be generated")
+    email: List[EmailSchema] = Field(description = "List of email details of the interview, if asked to be generated")
+    whatsapp: List[WhatsappSchema] = Field(
+        description = "List of whatsapp details of the interview, if asked to be generated"
+    )
+    description_value: DescriptionValueSchema = Field(
+        description = "Dictionary of description values of the interview, if asked to be generated"
+    )

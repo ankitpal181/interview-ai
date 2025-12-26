@@ -14,24 +14,36 @@ from langchain_core.tools import BaseTool
 
 
 class LocalModel(BaseChatModel):
+    """Local model implementation for locally hosted models"""
+
     client: Any = Field(default=None, exclude=True)
     tokenizer: Any = Field(default=None, exclude=True)
     fine_tune: bool = Field(default=False)
-    DEVICE: torch.device = Field(default="cpu", exclude=True)
+    device: torch.device = Field(default="cpu", exclude=True)
 
     def __init__(self, model: str, fine_tune: bool = False) -> None:
+        """
+        Initialize the local model.
+
+        Args:
+            model (str): Huggingface model name.
+            fine_tune (bool, optional): Whether to fine-tune the model with each run. Defaults to False.
+        
+        Returns:
+            None
+        """
         super().__init__()
         self.fine_tune = fine_tune
 
         if torch.backends.mps.is_available():
-            self.DEVICE = torch.device("mps")
+            self.device = torch.device("mps")
 
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model, local_files_only=True)
-            self.client = AutoModelForCausalLM.from_pretrained(model, local_files_only=True).to(self.DEVICE)
+            self.client = AutoModelForCausalLM.from_pretrained(model, local_files_only=True).to(self.device)
         except:
             self.tokenizer = AutoTokenizer.from_pretrained(model)
-            self.client = AutoModelForCausalLM.from_pretrained(model).to(self.DEVICE)
+            self.client = AutoModelForCausalLM.from_pretrained(model).to(self.device)
     
     @property
     def _llm_type(self) -> str:
@@ -41,13 +53,31 @@ class LocalModel(BaseChatModel):
         self, input: LanguageModelInput, config: Optional[RunnableConfig] = None,
         *, stop: Optional[list[str]] = None, **kwargs: Any,
     ) -> AIMessage:
+        """
+        Invoke the local model.
+
+        Args:
+            input (LanguageModelInput): Langchain Message object to the model.
+            config (Optional[RunnableConfig], optional): Langchain Runnable configuration object. Defaults to None.
+            stop (Optional[list[str]], optional): List of stop tokens. Defaults to None.
+            **kwargs (Any): Additional keyword arguments.
+        
+        Returns:
+            AIMessage: Generated AI message object.
+        """
         return super().invoke(input, config, stop=stop, **kwargs)
     
-    def _generate(
-        self,
-        messages: List[BaseMessage],
-        **kwargs: Any,
-    ) -> ChatResult:
+    def _generate(self, messages: List[BaseMessage], **kwargs: Any,) -> ChatResult:
+        """
+        Actual private method used by langchain's invoke to generate a response from the model.
+
+        Args:
+            messages (List[BaseMessage]): List of Langchain Message objects.
+            **kwargs (Any): Additional keyword arguments.
+        
+        Returns:
+            ChatResult: Generated chat result object.
+        """
         conversation_context = ""
         generated_texts_list = []
         tools_block = {
@@ -65,7 +95,7 @@ class LocalModel(BaseChatModel):
                 tools_json = json.dumps(tools_block, indent=2)
                 conversation_context += f"\n# Available Tools\nYou have access to the following tools. To call a tool, respond with a JSON object inside a ```json code block using this format:\n{{\n\"tool\": \"tool_name\",\n\"parameters\": {{ \"param1\": \"value1\" }}\n}}\n\n## Tool Definitions:\n{tools_json}\n"
 
-        tokenized_input = self.tokenizer(conversation_context, return_tensors="pt").to(self.DEVICE)
+        tokenized_input = self.tokenizer(conversation_context, return_tensors="pt").to(self.device)
 
         if self.fine_tune:
             llm_response = self.client.generate(
@@ -106,12 +136,39 @@ class LocalModel(BaseChatModel):
     def bind_tools(
         self, tools: Sequence[dict[str, Any] | BaseTool], **kwargs: Any
     ) -> Runnable[LanguageModelInput, AIMessage]:
+        """
+        Bind tools to the model.
+
+        Args:
+            tools (Sequence[dict[str, Any] | BaseTool]): List of tools to bind.
+            **kwargs (Any): Additional keyword arguments.
+        
+        Returns:
+            Runnable[LanguageModelInput, AIMessage]: Runnable object.
+        """
         formatted_tools = [convert_to_openai_tool(tool) for tool in tools]
         return self.bind(tools=formatted_tools, **kwargs)
 
 
 class Model:
-    def __init__(self, tools: Sequence[dict[str, Any] | BaseTool] = [], output_schema: BaseModel = None) -> None:
+    """
+    Model class to create a model object to be used in the graph. Options to create models with
+    various LLMs.
+    """
+
+    def __init__(
+        self, tools: Sequence[dict[str, Any] | BaseTool] = [], output_schema: BaseModel = None
+    ) -> None:
+        """
+        Initialize the model class instance.
+
+        Args:
+            tools (Sequence[dict[str, Any] | BaseTool], optional): List of tools to bind. Defaults to [].
+            output_schema (BaseModel, optional): Output schema for the model responses. Defaults to None.
+        
+        Returns:
+            None
+        """
         self.tools = tools
         self.tools_by_name = {tool.name: tool for tool in self.tools}
 
@@ -123,6 +180,15 @@ class Model:
             self.model = self._set_local_model(output_schema)
     
     def _set_openai_model(self, output_schema: BaseModel) -> ChatOpenAI:
+        """
+        Set the OpenAI model.
+
+        Args:
+            output_schema (BaseModel): Output schema for the model responses.
+        
+        Returns:
+            ChatOpenAI: OpenAI model object.
+        """
         model = ChatOpenAI(model = os.environ.get("LLM_MODEL_NAME", ""))
         model = model.bind_tools(self.tools)
 
@@ -130,6 +196,15 @@ class Model:
         return model
     
     def _set_gemini_model(self, output_schema: BaseModel) -> ChatGoogleGenerativeAI:
+        """
+        Set the Google Gemini model.
+
+        Args:
+            output_schema (BaseModel): Output schema for the model responses.
+        
+        Returns:
+            ChatGoogleGenerativeAI: Google Gemini model object.
+        """
         model = ChatGoogleGenerativeAI(model = os.environ.get("LLM_MODEL_NAME", ""))
         model = model.bind_tools(self.tools)
 
@@ -137,6 +212,15 @@ class Model:
         return model
     
     def _set_local_model(self, output_schema: BaseModel) -> LocalModel:
+        """
+        Set the local model.
+
+        Args:
+            output_schema (BaseModel): Output schema for the model responses.
+        
+        Returns:
+            LocalModel: Local model object.
+        """
         model = LocalModel(model = os.environ.get("LLM_MODEL_NAME", ""))
         model = model.bind_tools(self.tools)
 

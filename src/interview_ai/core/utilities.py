@@ -6,6 +6,16 @@ from .cache import cache
 
 # Graph Node Utilities(Planning Modules)
 def custom_tools_condition(state: InterviewState, messages_key: str = "messages") -> str:
+    """
+    Custom tools condition function to check if execution tools are required.
+
+    Args:
+        state (InterviewState): State object.
+        messages_key (str): Key to access messages in the state.
+    
+    Returns:
+        str: "execution_tools" if the message contains tool calls, otherwise "answer_collection_node".
+    """
     ai_message = None
 
     if isinstance(state, list):
@@ -24,6 +34,15 @@ def custom_tools_condition(state: InterviewState, messages_key: str = "messages"
     return "answer_collection_node"
 
 def load_interview_rules(format: str = "coding") -> dict:
+    """
+    Load interview rules from the interview_rules.json file.
+
+    Args:
+        format (str): Format of the interview rules to be loaded.
+    
+    Returns:
+        dict: Interview rules.
+    """
     root_dir = os.getcwd()
     json_path = os.path.join(root_dir, "interview_ai", "interview_rules.json")
 
@@ -33,6 +52,17 @@ def load_interview_rules(format: str = "coding") -> dict:
     return interview_rules.get(format, {})
 
 def load_cache(thread_id: str, interviewbot: Any) -> dict:
+    """
+    Load cached data from the cache module for given thread, if not found
+    fetch the latest graph state and use it to populate the cache.
+
+    Args:
+        thread_id (str): Thread ID of the interview, used for cache lookup.
+        interviewbot (Any): InterviewBot instance, used to fetch the latest graph state.
+    
+    Returns:
+        dict: Cached data.
+    """
     cached_data = cache.get(thread_id)
 
     if cached_data is None:
@@ -58,6 +88,12 @@ def load_cache(thread_id: str, interviewbot: Any) -> dict:
     return cached_data
 
 def fetch_user_tools() -> list:
+    """
+    Fetch user defined custom tools from the tools.py file.
+
+    Returns:
+        list: List of user tools.
+    """
     root_dir = os.getcwd()
     tools_path = os.path.join(root_dir, "interview_ai", "tools.py")
 
@@ -72,4 +108,3 @@ def fetch_user_tools() -> list:
         return getattr(module, 'user_tools', [])
     except Exception:
         return []
-
