@@ -9,6 +9,11 @@ class StorageMode(Enum):
     MEMORY = "memory"
     DATABASE = "database"
 
+class DatabaseName(Enum):
+    POSTGRES = "postgres"
+    MONGODB = "mongo"
+    SQLITE = "sqlite"
+
 class Settings(BaseSettings):
     """
     Settings class to load the system configurations and environment variables. 
@@ -21,6 +26,7 @@ class Settings(BaseSettings):
         database_uri (Optional[str]): Database URI.
         max_intro_questions (int): Maximum number of introduction questions.
         internet_search (str): Internet search tool name.
+        database_name (DatabaseName): Database name.
     """
     model_config = SettingsConfigDict()
 
@@ -32,6 +38,7 @@ class Settings(BaseSettings):
 
     # STORAGE
     storage_mode: StorageMode = Field(default=StorageMode.MEMORY.value)
+    database_name: DatabaseName = Field(default=DatabaseName.SQLITE.value)
     database_uri: Optional[str] = Field(
         default=os.getenv("POSTGRES_CONNECTION_URI") or os.getenv("MONGODB_CONNECTION_URI")
     )

@@ -11,6 +11,7 @@ from langchain_core.language_models import LanguageModelInput
 from langchain_core.outputs import ChatResult, ChatGeneration
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.tools import BaseTool
+from .settings import settings
 
 
 class LocalModel(BaseChatModel):
@@ -189,7 +190,7 @@ class Model:
         Returns:
             ChatOpenAI: OpenAI model object.
         """
-        model = ChatOpenAI(model = os.environ.get("LLM_MODEL_NAME", ""))
+        model = ChatOpenAI(model = settings.llm_model_name)
         model = model.bind_tools(self.tools)
 
         if output_schema: model = model.with_structured_output(output_schema)
@@ -205,7 +206,7 @@ class Model:
         Returns:
             ChatGoogleGenerativeAI: Google Gemini model object.
         """
-        model = ChatGoogleGenerativeAI(model = os.environ.get("LLM_MODEL_NAME", ""))
+        model = ChatGoogleGenerativeAI(model = settings.llm_model_name)
         model = model.bind_tools(self.tools)
 
         if output_schema: model = model.with_structured_output(output_schema)
@@ -221,7 +222,7 @@ class Model:
         Returns:
             LocalModel: Local model object.
         """
-        model = LocalModel(model = os.environ.get("LLM_MODEL_NAME", ""))
+        model = LocalModel(model = settings.llm_model_name)
         model = model.bind_tools(self.tools)
 
         if output_schema: model = model.with_structured_output(output_schema)

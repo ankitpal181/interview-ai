@@ -5,6 +5,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.mongodb import MongoDBSaver
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.memory import InMemorySaver
+from .settings import settings
 
 
 class Storage:
@@ -50,7 +51,7 @@ class Storage:
         Returns:
             MongoDBSaver: MongoDB storage object.
         """
-        connection = MongoClient(os.environ.get("MONGODB_CONNECTION_URI"))
+        connection = MongoClient(settings.database_uri)
         return MongoDBSaver(client=connection)
     
     def _set_postgres_storage(self) -> PostgresSaver:
@@ -60,5 +61,5 @@ class Storage:
         Returns:
             PostgresSaver: PostgreSQL storage object.
         """
-        connection = psycopg.connect(os.environ.get("POSTGRES_CONNECTION_URI"))
+        connection = psycopg.connect(settings.database_uri)
         return PostgresSaver(connection)

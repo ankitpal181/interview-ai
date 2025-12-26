@@ -6,6 +6,7 @@ from ..core.operators import (
     phase_router_function, reporting_perception_function
 )
 from ..core.utilities import custom_tools_condition
+from ..core.settings import settings
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import tools_condition
 
@@ -39,4 +40,4 @@ graph.add_conditional_edges("reporting_node", tools_condition)
 graph.add_edge("tools", "reporting_node")
 
 # Compile Graph
-interviewbot = graph.compile(Storage("database").storage)
+interviewbot = graph.compile(Storage(settings.storage_mode, settings.database_name).storage)

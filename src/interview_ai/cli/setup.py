@@ -29,11 +29,13 @@ def _setup_config(paths: List[str]) -> None:
                 "comments": {
                     "llm_model_name": "Model name to be used for llm. For local models, use model name from hugging-face. Agent will download and setup the model locally.",
                     "storage_mode": "[Options]: memory or database. To use database, add related database uri in environment variables. Supported databases are postgres, sqlite, mongodb. See .example-env for more details.",
-                    "internet_search": "[Options]: duckduckgo, bing. To use bing, add BING_SUBSCRIPTION_KEY and BING_SEARCH_URL in environment variables. See .example-env for more details."
+                    "internet_search": "[Options]: duckduckgo, bing. To use bing, add BING_SUBSCRIPTION_KEY and BING_SEARCH_URL in environment variables. See .example-env for more details.",
+                    "database_name": "[Options]: postgres, sqlite, mongodb. To use database, add related database uri in environment variables. See .example-env for more details."
                 },
                 "llm_model_name": "gpt-4.1-mini",
                 "storage_mode": "memory",
-                "internet_search": "duckduckgo"
+                "internet_search": "duckduckgo",
+                "database_name": "sqlite"
             }
             file.write(json.dumps(data, indent=4))
         print(f"{path}/ created!")
