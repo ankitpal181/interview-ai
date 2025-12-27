@@ -177,14 +177,18 @@ class InterviewClient:
 
         for operation in operations_map:
             if operation.get("type") == "email":
-                user_message["email"] = user_message.get("email", []).append({
+                if "email" not in user_message:
+                    user_message["email"] = []
+                user_message["email"].append({
                     "receiver_name": operation.get("receiver_name"),
                     "receiver_relation_to_interview": operation.get("receiver_relation_to_interview"),
                     "template": operation.get("template")
                 })
                 user_message["attachment"] = "Generate Evaluation PDF"
             elif operation.get("type") == "whatsapp":
-                user_message["whatsapp"] = user_message.get("whatsapp", []).append({
+                if "whatsapp" not in user_message:
+                    user_message["whatsapp"] = []
+                user_message["whatsapp"].append({
                     "receiver_name": operation.get("receiver_name"),
                     "receiver_relation_to_interview": operation.get("receiver_relation_to_interview"),
                     "template": operation.get("template")
@@ -198,8 +202,10 @@ class InterviewClient:
 
                     if value.startswith("#Description#") and value.endswith("#Description#"):
                         required_values[key] = value
-
-                user_message["description_value"] = user_message.get("description_value", []).append(required_values)
+                
+                if "description_value" not in user_message:
+                    user_message["description_value"] = []
+                user_message["description_value"].append(required_values)
 
                 if operation.get("attachment", "") == "#Evaluation PDF#":
                     user_message["attachment"] = "Generate Evaluation PDF"
