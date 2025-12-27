@@ -50,6 +50,7 @@ MONGODB_CONNECTION_URI="mongodb://..."
 {
   "llm_model_name": "gpt-4.1-mini",
   "storage_mode": "memory",
+  "database_name": "sqlite",
   "internet_search": "duckduckgo"
 }
 ```
@@ -77,8 +78,18 @@ print(result["evaluation"])  # Final evaluation from LLM
 
 # With operations_map for additional actions
 result = client.end(interview_config, operations_map=[
-    {"type": "email", "to": "hr@company.com"},
-    {"type": "api", "endpoint": "https://..."}
+    {
+        "type": "email", 
+        "receiver_name": "HR Manager", 
+        "receiver_relation_to_interview": "Hiring Manager",
+        "template": "Here is the candidate report..."
+    },
+    {
+        "type": "api", 
+        "endpoint": "https://api.company.com/report",
+        "body": {"candidate": "John", "rating": "#Description# Extract rating #Description#"},
+        "attachment": "#Evaluation PDF#"
+    }
 ])
 # Returns: {"evaluation": "...", "email": "...", "api": "..."}
 ```
