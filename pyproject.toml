@@ -7,7 +7,7 @@ where = ["src"]
 
 [project]
 name = "interview-ai"
-version = "1.0.5"
+version = "1.0.0"
 description = "AI-powered interview automation with LangGraph. Conduct, evaluate, and report on technical interviews."
 readme = "README.md"
 authors = [
