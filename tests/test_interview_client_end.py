@@ -10,6 +10,9 @@ from unittest.mock import MagicMock, patch, ANY
 
 # Add src to python path to allow imports
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src"))
+# Corrects path to point to interview-ai/src
+sys.path.pop() # Remove previous incorrect append if any (safety)
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
 
 # MOCK EVERYTHING BEFORE IMPORTING
 # This is necessary because operators.py instantiates Model() at module level
@@ -131,12 +134,15 @@ class TestInterviewClientEnd:
         
         # Mock LLM response with generated values
         mock_response_content = {
-            "description_value": {
-                "https://api.test/v1": {
-                    "values": [{"key": "dynamic", "value": "Generated Summary"}]
+            "description_value": [
+                {
+                    "endpoint": "https://api.test/v1",
+                    "key": "dynamic",
+                    "value": "Generated Summary"
                 }
-            },
-            "pdf": {"file_path": "/tmp/test.pdf"}
+            ],
+            "pdf": {"file_path": "/tmp/test.pdf"},
+            "error_report": ""
         }
         mock_response = MagicMock()
         mock_response.content = json.dumps(mock_response_content)

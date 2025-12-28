@@ -35,13 +35,21 @@ This creates an `interview_ai/` directory with:
 Copy `.example-env` to `.env` and configure:
 
 ```env
-# Required: Choose one
+# Required: Choose one (Or leave both blank for Local Models)
 OPENAI_API_KEY="your-openai-key"
 GOOGLE_API_KEY="your-google-key"
 
 # Optional: Database persistence
 POSTGRES_CONNECTION_URI="postgresql://..."
 MONGODB_CONNECTION_URI="mongodb://..."
+
+# Optional: Search (Bing)
+# BING_SUBSCRIPTION_KEY="your-bing-key"
+# BING_SEARCH_URL="https://api.bing.microsoft.com/v7.0/search"
+
+# Optional: LangSmith Tracing
+# LANGCHAIN_API_KEY="your-langchain-key"
+# LANGCHAIN_TRACING_V2="true"
 ```
 
 ### Config File (`interview_ai/config.json`)
@@ -55,10 +63,12 @@ MONGODB_CONNECTION_URI="mongodb://..."
 }
 ```
 
+> **Note**: For local models, set `llm_model_name` to a Hugging Face model name (e.g., `meta-llama/Llama-2-7b-chat-hf`). The agent will handle downloading and setting it up locally (ensure API keys are blank in `.env`).
+
 ## Quick Start
 
 ```python
-from interview_ai import InterviewClient
+from interview_ai.clients import InterviewClient
 
 # Initialize with interview format
 client = InterviewClient(interview_format="short")
@@ -85,13 +95,20 @@ result = client.end(interview_config, operations_map=[
         "template": "Here is the candidate report..."
     },
     {
+        "type": "whatsapp",
+        "receiver_name": "HR Manager",
+        "receiver_relation_to_interview": "Hiring Manager",
+        "template": "Here is the candidate report..."
+    },
+    {
         "type": "api", 
         "endpoint": "https://api.company.com/report",
         "body": {"candidate": "John", "rating": "#Description# Extract rating #Description#"},
         "attachment": "#Evaluation PDF#"
     }
 ])
-# Returns: {"evaluation": "...", "email": "...", "api": "..."}
+# Returns: {"evaluation": "...", "email": "...", "whatsapp": "...", "api": "..."}
+# Note: Generated files (PDF/CSV) are saved in the 'interview_ai/' directory.
 ```
 
 ### Interview Formats

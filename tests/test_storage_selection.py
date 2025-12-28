@@ -7,7 +7,8 @@ import sys
 from unittest.mock import MagicMock, patch
 
 # Add src to python path to allow imports
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src"))
+# Corrects path to point to interview-ai/src
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
 
 from interview_ai.core.storage import Storage
 

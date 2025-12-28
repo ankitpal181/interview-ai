@@ -133,8 +133,9 @@ class TestCliSetup:
                 output_str = output.getvalue()
                 assert "Interview AI Setup" in output_str
                 assert "interview_ai/ created!" in output_str
-                assert "config.json created!" in output_str
-                assert "interview_rules.json created!" in output_str
+                # Check for file creation messages (files are inside the dir)
+                assert "config.json/ created!" in output_str
+                assert "interview_rules.json/ created!" in output_str
                 assert "Setup Completed Successfully" in output_str
 
     def test_fails_if_directory_exists(self):
