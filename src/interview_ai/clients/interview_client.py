@@ -173,6 +173,8 @@ class InterviewClient:
 
         cached_data = load_cache(interview_config['configurable']['thread_id'], interviewbot)
         response_map = {"evaluation": cached_data['last_message']['text']}
+        
+        if not operations_map: return response_map
         user_message = {}
 
         for operation in operations_map:
@@ -228,16 +230,22 @@ class InterviewClient:
                     ) else operation.get("attachment"),
                     "method": operation.get("method", "POST")
                 }
-                message_to_call_api_tool["body"].update({
-                    pair["key"]: pair["value"] for pair in response_data["description_value"][
-                        operation.get("endpoint")
-                    ]["values"]
-                })
 
-                interviewbot.invoke({
-                    "messages": [HumanMessage(content="Call these APIs:\n"+json.dumps(message_to_call_api_tool))],
+                for value in response_data["description_value"]:
+                    if value["endpoint"] == operation.get("endpoint"):
+                        message_to_call_api_tool["body"].update({
+                            value["key"]: value["value"]
+                        })
+
+                api_response = interviewbot.invoke({
+                    "messages": [HumanMessage(content=json.dumps(message_to_call_api_tool))],
                     "phase": "reporting"
                 }, interview_config)
+                api_response_data = json.loads(api_response["messages"][-1].content)
+
+                if api_response_data["error_report"]:
+                    response_map["api_errors"] = response_map.get("api_errors", [])
+                    response_map["api_errors"].append(api_response_data["error_report"])
         
         response_map["operations_results"] = response_data
         return response_map

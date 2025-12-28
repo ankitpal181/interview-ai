@@ -9,11 +9,12 @@ from langgraph.types import interrupt
 
 
 # InterviewBot AI instances
-questioner_model = Model(tools = [search_internet, *user_tools], output_schema = QuestionsSchema)
-evaluator_model = Model(tools = user_tools, output_schema = EvaluationSchema)
-reporting_model = Model(
-    tools = [generate_csv_tool, generate_pdf_tool, call_api_tool, *user_tools], output_schema = ReportingSchema
-)
+questioner_model = Model(tools = [], output_schema = QuestionsSchema)
+evaluator_model = Model(tools = [], output_schema = EvaluationSchema)
+reporting_model = Model(tools = [], output_schema = ReportingSchema)
+questioner_tools_operator = Model(tools = [search_internet, *user_tools])
+evaluator_tools_operator = Model(tools = user_tools)
+reporting_tools_operator = Model(tools = [generate_csv_tool, generate_pdf_tool, call_api_tool, *user_tools])
 
 
 # Graph Node Operators/Functions
@@ -65,6 +66,13 @@ def question_generation_function(state: InterviewState) -> dict:
         dict: Updated state of the interview.
     """
     messages = state["messages"]
+    questions_data = questioner_tools_operator.model.invoke(messages)
+
+    if hasattr(questions_data, "tool_calls") and len(questions_data.tool_calls) > 0:
+        return {"messages": [questions_data]}
+    else:
+        messages.append(questions_data)
+
     questions = questioner_model.model.invoke(messages)
     questions_json = questions.model_dump_json(indent = 2)
 
@@ -89,7 +97,7 @@ def answer_collection_function(state: InterviewState) -> dict:
         return {"answers": answers + [answer], "phase": "q&a"}
     else:
         return {
-            "messages": [HumanMessage(json.dumps(answers))],
+            "messages": [HumanMessage(json.dumps(answers + [answer]))],
             "answers": answers + [answer],
             "phase": "evaluation"
         }
@@ -163,8 +171,17 @@ def reporting_function(state: InterviewState) -> dict:
         dict: Updated state of the interview.
     """
     messages = state["messages"]
+    response_data = reporting_tools_operator.model.invoke(messages)
+
+    if hasattr(response_data, "tool_calls") and len(response_data.tool_calls) > 0:
+        return {"messages": [response_data]}
+    else:
+        messages.append(response_data)
+
     response = reporting_model.model.invoke(messages)
-    return {"messages": [response]}
+    response_json = response.model_dump_json(indent = 2)
+
+    return {"messages": [AIMessage(response_json)]}
 
 def reporting_perception_function(state: InterviewState) -> dict:
     """

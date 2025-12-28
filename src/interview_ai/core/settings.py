@@ -62,15 +62,20 @@ class Settings(BaseSettings):
         root_dir = os.getcwd()
         config_path = os.path.join(root_dir, "interview_ai", "config.json")
         
-        with open(config_path, "r") as config_file:
-            system_config = json.load(config_file)
+        if os.path.exists(config_path):
+            with open(config_path, "r") as config_file:
+                system_config = json.load(config_file)
 
-            for config_key, config_value in system_config.items():
-                if config_key == "comments": continue
-                setattr(self, config_key, config_value)
-        
-        self._validate_settings()
-    
+                for config_key, config_value in system_config.items():
+                    if config_key == "comments": continue
+                    setattr(self, config_key, config_value)
+
+            self._validate_settings()
+        else:
+            # Config file might not exist during initialization (init-agent)
+            # Validation will happen when InterviewClient is instantiated.
+            pass
+
     def _validate_settings(self) -> None:
         """
         Validate the settings values.

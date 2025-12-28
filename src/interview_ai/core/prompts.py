@@ -34,6 +34,9 @@ CSV_PROMPT = """
     :param data: The well-structured Python dictionary where keys are CSV headers and values are
     equal-length lists of data points, ready for conversion.
     :type data: dict
+    :param candidate_name: Name of the candidate who has been interviewed, name can be found
+    in conversation history.
+    :type candidate_name: str
 
     ## Returns
 
@@ -74,6 +77,9 @@ PDF_PROMPT = """
     :param template: The complete, professional, and dynamically generated HTML string that will
     serve as the PDF's content and template.
     :type template: str
+    :param candidate_name: Name of the candidate who has been interviewed, name can be found
+    in conversation history.
+    :type candidate_name: str
 
     ## Returns
 
@@ -125,7 +131,7 @@ INTERVIEWBOT_PROMPT = """
     failure analysis.").
 """
 REPORTING_PROMPT_MAP = {
-    "pdf": """ - Generate a PDF report of the conversion and evaluation of the interview.
+    "pdf": """ - Generate a PDF report of the conversion and evaluation of the interview using pdf tools.
     Keep the evaluation intact and don't try to summarise it.
     Use pdf part of the response schema for this part's response.""",
     "email": """ - Generate email subject and body to inform the receiver about the interview
@@ -139,8 +145,8 @@ REPORTING_PROMPT_MAP = {
     Use description_value part of the response schema for this part's response."""
 }
 REPORTING_PROMPT = """
-    You are an AI post interview analyst. Your job is to generate different information pieces based on the given
-    instructions below:
+    You are an AI post interview analyst. You must use tools to acomplish your goals.
+    Your job is to generate different information pieces based on the given instructions below:
     
     {pdf}
     {email}
@@ -148,6 +154,8 @@ REPORTING_PROMPT = """
     {description_value}
 
     Read user messages to get context of the conversation and data to be used for information generation.
+    If the request is similer to previous one with #Description# replaced with actual values, use the api tool
+    to call the api request.
 """
 API_PROMPT = """
     Executes an HTTP request to a specified API endpoint with customizable method, headers, body, and attachments.
@@ -166,8 +174,9 @@ API_PROMPT = """
         `{"Content-Type": "application/json", "Authorization": "Bearer ..."}`).
     4.  **Body Preparation:** Synthesize and format the data to be sent in the request body. If the API 
         expects JSON, ensure the body is structured accordingly.
-    5.  **Attachment Handling:** If a file (such as an evaluation PDF or CSV) needs to be uploaded, 
-        provide the absolute file path as the 'attachment'.
+    5.  **Attachment Handling:** If file/files (such as an evaluation PDF or CSV) needs to be uploaded, 
+        provide the absolute file/files path and file/files name as a dict{name: path, name2: path2, ..}
+        as the 'attachment'.
 
     ## Arguments
 
@@ -176,7 +185,7 @@ API_PROMPT = """
         - 'endpoint' (str): The destination URL.
         - 'headers' (dict): A key-value pair of HTTP headers.
         - 'body' (dict/str): The payload/data to be sent in the request.
-        - 'attachment' (str): The file path of any attachment to be included in the request.
+        - 'attachment' (dict): The file/files path list of any attachment to be included in the request.
     :type api_details: dict
 
     ## Returns
