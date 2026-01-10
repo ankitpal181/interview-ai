@@ -6,6 +6,10 @@
 
 AI-powered interview automation with LangGraph. Conduct, evaluate, and report on technical interviews with customizable rules and tools.
 
+- **Documentation**: https://toonformatter.net/docs.html?package=interview-ai
+- **Source Code**: https://github.com/ankitpal181/interview-ai
+- **Bug Reports**: https://github.com/ankitpal181/interview-ai/issues
+
 ## Installation
 
 ```bash
