@@ -104,18 +104,23 @@ class TestInterviewClientEnd:
         mock_response = MagicMock()
         mock_response.content = json.dumps({
             "email": [{"subject": "Test", "body": "Body", "attachment": {"file_path": "path.pdf"}}],
-            "pdf": {"file_path": "path.pdf"}
+            "pdf": {"file_path": "path.pdf"},
+            "error_report": ""
         })
         mock_interviewbot.invoke.return_value = {"messages": [mock_response]}
         
         self.client.end(self.interview_config, operations)
         
         # Verify correct message context was sent to LLM
+        # Client now sends one message with all operations
         call_args = mock_interviewbot.invoke.call_args_list[0]
         sent_message = json.loads(call_args[0][0]["messages"][0].content)
         
         assert "email" in sent_message
+        assert len(sent_message["email"]) == 1
+        # "type" is removed before sending
         assert sent_message["email"][0]["receiver_name"] == "Test Recipient"
+        assert "type" not in sent_message["email"][0]
         assert sent_message["attachment"] == "Generate Evaluation PDF"
 
     def test_operations_map_api_placeholder_processing(self, mock_interviewbot, mock_cache):
@@ -132,16 +137,9 @@ class TestInterviewClientEnd:
             "attachment": "#Evaluation PDF#"
         }]
         
-        # Mock LLM response with generated values
+        # Mock LLM response
         mock_response_content = {
-            "description_value": [
-                {
-                    "endpoint": "https://api.test/v1",
-                    "key": "dynamic",
-                    "value": "Generated Summary"
-                }
-            ],
-            "pdf": {"file_path": "/tmp/test.pdf"},
+            "operations_results": ["done"],
             "error_report": ""
         }
         mock_response = MagicMock()
@@ -150,21 +148,22 @@ class TestInterviewClientEnd:
         
         self.client.end(self.interview_config, operations)
         
-        # Verify first call for generation requests description values
+        # Verify SINGLE call that includes the api definition
+        assert mock_interviewbot.invoke.call_count == 1
+        
         first_call = mock_interviewbot.invoke.call_args_list[0]
         sent_request = json.loads(first_call[0][0]["messages"][0].content)
         
-        assert "description_value" in sent_request
-        # Check specific structure based on implementation: 
-        # user_message["description_value"] is a list of dicts
-        assert sent_request["description_value"][0]["dynamic"] == "#Description# Generate a summary #Description#"
+        assert "api" in sent_request
+        assert len(sent_request["api"]) == 1
         
-        # Verify second call executes the API tool with filled values
-        second_call = mock_interviewbot.invoke.call_args_list[1]
-        api_call_msg = json.loads(second_call[0][0]["messages"][0].content.replace("Call these APIs:\n", ""))
-        
-        assert api_call_msg["body"]["dynamic"] == "Generated Summary"
-        assert api_call_msg["attachment"] == "/tmp/test.pdf"
+        api_op = sent_request["api"][0]
+        assert api_op["endpoint"] == "https://api.test/v1"
+        assert "type" not in api_op
+        # Client no longer pre-processes placeholders; sends raw to LLM
+        assert api_op["body"]["dynamic"] == "#Description# Generate a summary #Description#"
+        # Attachment should be resolved to literal string instruction for LLM
+        assert sent_request["attachment"] == "Generate Evaluation PDF"
 
     def test_whatsapp_operation_structure(self, mock_interviewbot, mock_cache):
         """Test that WhatsApp operations are correctly structured."""
@@ -177,7 +176,7 @@ class TestInterviewClientEnd:
         }]
         
         mock_response = MagicMock()
-        mock_response.content = json.dumps({"whatsapp": [], "pdf": {}})
+        mock_response.content = json.dumps({"whatsapp": [], "pdf": {}, "error_report": ""})
         mock_interviewbot.invoke.return_value = {"messages": [mock_response]}
         
         self.client.end(self.interview_config, operations)
@@ -187,3 +186,4 @@ class TestInterviewClientEnd:
         
         assert "whatsapp" in sent_message
         assert sent_message["whatsapp"][0]["receiver_name"] == "Test User"
+        assert "type" not in sent_message["whatsapp"][0]

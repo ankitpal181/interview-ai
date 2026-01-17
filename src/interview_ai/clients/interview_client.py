@@ -199,9 +199,7 @@ class InterviewClient:
                     "endpoint": operation.get("endpoint"),
                     "headers": operation.get("headers", {}),
                     "body": operation.get("body", {}),
-                    "attachment": response_data["pdf"]["file_path"] if (
-                        operation.get("attachment", "") == "#Evaluation PDF#"
-                    ) else operation.get("attachment"),
+                    "attachment": operation.get("attachment"),
                     "method": operation.get("method", "POST")
                 })
         

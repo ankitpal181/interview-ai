@@ -9,7 +9,21 @@ from unittest.mock import MagicMock, patch
 
 # Add src to python path to allow imports
 # Corrects path to point to interview-ai/src
+# Add src to python path to allow imports
+# Corrects path to point to interview-ai/src
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
+
+# Clean up sys.modules to ensure we load the real tools module
+# This protects against pollution from other tests running in the same suite
+modules_to_reload = [
+    "interview_ai.core.tools",
+    "interview_ai.core.utilities",
+    "interview_ai.core.schemas",
+    "interview_ai.core.operators"
+]
+for mod in modules_to_reload:
+    if mod in sys.modules:
+        del sys.modules[mod]
 
 from interview_ai.core.tools import call_api_endpoint, generate_csv_file, generate_pdf_file
 
