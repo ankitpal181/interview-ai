@@ -65,18 +65,21 @@ def question_generation_function(state: InterviewState) -> dict:
     Returns:
         dict: Updated state of the interview.
     """
-    messages = state["messages"]
-    questions_data = questioner_tools_operator.model.invoke(messages)
+    try:
+        messages = state["messages"]
+        questions_data = questioner_tools_operator.model.invoke(messages)
 
-    if hasattr(questions_data, "tool_calls") and len(questions_data.tool_calls) > 0:
-        return {"messages": [questions_data]}
-    else:
-        messages.append(questions_data)
+        if hasattr(questions_data, "tool_calls") and len(questions_data.tool_calls) > 0:
+            return {"messages": [questions_data]}
+        else:
+            messages.append(questions_data)
 
-    questions = questioner_model.model.invoke(messages)
-    questions_json = questions.model_dump_json(indent = 2)
+        questions = questioner_model.model.invoke(messages)
+        questions_json = questions.model_dump_json(indent = 2)
 
-    return {"messages": [AIMessage(questions_json)], "questions": questions.questions}
+        return {"messages": [AIMessage(questions_json)], "questions": questions.questions}
+    except Exception as ex:
+        return {"messages": [AIMessage(f"Error while generating questions: {str(ex)}")]}
 
 def answer_collection_function(state: InterviewState) -> dict:
     """
@@ -112,11 +115,14 @@ def evaluation_function(state: InterviewState) -> dict:
     Returns:
         dict: Updated state of the interview.
     """
-    messages = state["messages"]
-    evaluation = evaluator_model.model.invoke(messages)
-    evaluation_json = evaluation.model_dump_json(indent = 2)
+    try:
+        messages = state["messages"]
+        evaluation = evaluator_model.model.invoke(messages)
+        evaluation_json = evaluation.model_dump_json(indent = 2)
 
-    return {"messages": [AIMessage(evaluation_json)]}
+        return {"messages": [AIMessage(evaluation_json)]}
+    except Exception as ex:
+        return {"messages": [AIMessage(f"Error while generating questions: {str(ex)}")]}
 
 def interview_perception_function(state: InterviewState) -> dict:
     """
@@ -170,18 +176,21 @@ def reporting_function(state: InterviewState) -> dict:
     Returns:
         dict: Updated state of the interview.
     """
-    messages = state["messages"]
-    response_data = reporting_tools_operator.model.invoke(messages)
+    try:
+        messages = state["messages"]
+        response_data = reporting_tools_operator.model.invoke(messages)
 
-    if hasattr(response_data, "tool_calls") and len(response_data.tool_calls) > 0:
-        return {"messages": [response_data]}
-    else:
-        messages.append(response_data)
+        if hasattr(response_data, "tool_calls") and len(response_data.tool_calls) > 0:
+            return {"messages": [response_data]}
+        else:
+            messages.append(response_data)
 
-    response = reporting_model.model.invoke(messages)
-    response_json = response.model_dump_json(indent = 2)
+        response = reporting_model.model.invoke(messages)
+        response_json = response.model_dump_json(indent = 2)
 
-    return {"messages": [AIMessage(response_json)]}
+        return {"messages": [AIMessage(response_json)]}
+    except Exception as ex:
+        return {"messages": [AIMessage(f"Error while generating questions: {str(ex)}")]}
 
 def reporting_perception_function(state: InterviewState) -> dict:
     """
@@ -200,7 +209,7 @@ def reporting_perception_function(state: InterviewState) -> dict:
         pdf=REPORTING_PROMPT_MAP.get("pdf") if "attachment" in reporting_data else "",
         email=REPORTING_PROMPT_MAP.get("email") if "email" in reporting_data else "",
         whatsapp=REPORTING_PROMPT_MAP.get("whatsapp") if "whatsapp" in reporting_data else "",
-        description_value=REPORTING_PROMPT_MAP.get("description_value") if "description_value" in reporting_data else ""
+        description_value=REPORTING_PROMPT_MAP.get("description_value")
     ))
 
     if system_prompt: state["messages"].insert(-1, system_prompt)

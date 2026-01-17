@@ -8,6 +8,7 @@ from ..core.operators import (
 from ..core.utilities import custom_tools_condition
 from ..core.settings import settings
 from langgraph.graph import StateGraph, START, END
+from langgraph.types import RetryPolicy
 from langgraph.prebuilt import tools_condition
 
 
@@ -15,14 +16,26 @@ from langgraph.prebuilt import tools_condition
 graph = StateGraph(InterviewState)
 
 # Graph Nodes
-graph.add_node("perception_node", interview_perception_function)
-graph.add_node("candidate_information_collection_node", candidate_information_collection_function)
+graph.add_node(
+    "perception_node", interview_perception_function, retry_policy=RetryPolicy(max_retries=3)
+)
+graph.add_node(
+    "candidate_information_collection_node",
+    candidate_information_collection_function,
+    retry_policy=RetryPolicy(max_retries=3)
+)
 graph.add_node("question_generation_node", question_generation_function)
-graph.add_node("answer_collection_node", answer_collection_function)
+graph.add_node(
+    "answer_collection_node", answer_collection_function, retry_policy=RetryPolicy(max_retries=3)
+)
 graph.add_node("evaluation_node", evaluation_function)
 graph.add_node("execution_tools", execution_tool_node)
 graph.add_node("reporting_node", reporting_function)
-graph.add_node("reporting_perception_node", reporting_perception_function)
+graph.add_node(
+    "reporting_perception_node",
+    reporting_perception_function,
+    retry_policy=RetryPolicy(max_retries=3)
+)
 graph.add_node("tools", reporting_tool_node)
 
 # Graph Edges

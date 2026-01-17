@@ -1,5 +1,3 @@
-from datetime import datetime
-
 CSV_PROMPT = """
     Generates a structured CSV file from conversational data points provided in a dictionary format.
 
@@ -61,11 +59,9 @@ PDF_PROMPT = """
         a. **Analyze the Content Type:** Determine the nature of the data (e.g., meeting summary,
         financial report, project plan, research analysis, etc.).
         b. **Create a Professional HTML Template:** Generate a complete, self-contained HTML string that
-        serves as the PDF template. This template **must** be professionally designed (using appropriate
-        CSS inline or `<style>` blocks) to ensure high-quality presentation, clear hierarchy, design, and
-        readability.
-        c. **Mandatory Inclusion:** The HTML must include a professional title, the date of creation, and
-        logical structural elements (headings, paragraphs, lists) for the included data.
+        serves as the PDF template. This template **must** follow the structure of the provided HTML template
+        to ensure high-quality presentation, clear hierarchy, design, and readability.
+        c. **HTML Template:** <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interview Evaluation Report</title><style>body{background:#efefef;font-family:'Times New Roman',Georgia,serif;padding:40px}.page{width:800px;margin:24px auto;background:#fff;padding:36px 52px;box-shadow:0 6px 18px rgba(0,0,0,.12)}header{text-align:left;border-bottom:1px solid #ddd;padding-bottom:12px;margin-bottom:18px}header h1{margin:0;font-size:20px;letter-spacing:.5px}header .meta{margin-top:6px;color:#333;font-size:14px}.label{font-weight:700;display:inline-block;width:110px;vertical-align:top}.value{display:inline-block;width:620px}.section{margin-top:18px}h2{font-size:16px;margin:6px 0 12px 0;border-left:4px solid #111;padding-left:10px}.qa{margin-left:8px}.qa ol{margin:6px 0 0 22px}.qa li{margin:10px 0}.answer{margin-top:6px;white-space:pre-wrap;font-family:inherit}.evaluation{background:#fafafa;border:1px solid #eee;padding:12px;margin-top:10px}.metrics{margin-top:10px}.bold{font-weight:700}footer{margin-top:20px;border-top:1px solid #eee;padding-top:10px;font-size:13px;color:#222}.verdict{font-size:15px;font-weight:800;color:#900;margin-top:8px}</style></head><body><div class="page"><header><h1>Interview Evaluation Report</h1><div class="meta"><span class="label">Candidate:</span><span class="value">{candidate_name}</span><br><span class="label">Role:</span><span class="value">{role}</span><br><span class="label">Companies:</span><span class="value">{companies}</span><br><span class="label">Date:</span><span class="value">{date}</span></div></header><div class="section"><h2>Interview Questions and Answers</h2><div class="qa"><ol><li><div class="bold">{question}</div><div class="answer">{answer}</div></li></ol></div></div><div class="section"><h2>Evaluation</h2><div class="evaluation"><div class="bold">Rating:</div>{rating}<div style="margin-top:8px"><div class="bold">Feedback:</div><div class="answer">{feedback}</div></div></div><div class="section metrics"><h2>Performance Metrics</h2><div><span class="bold">Confidence:</span>{confidence}</div><div style="margin-top:6px"><span class="bold">Answering Patterns:</span>{answering_patterns}</div><div style="margin-top:6px"><span class="bold">Clarity &amp; Completeness within Time:</span>{clarity_completeness}</div></div><div class="section"><div class="verdict">Final Verdict: {final_verdict}</div></div><footer>Interview Evaluation Report &nbsp;&nbsp;|&nbsp;&nbsp; Interview Questions and Answers &nbsp;&nbsp;|&nbsp;&nbsp; Evaluation &nbsp;&nbsp;|&nbsp;&nbsp; Performance Metrics</footer></div></body></html>
     3.  **Data Visualization (Crucial):**
         a. If the data contains **quantitative, numerical, or comparative information** (e.g., statistics,
         trends, metrics), the generated HTML **MUST** include embedded code (e.g., a JavaScript library
@@ -154,7 +150,7 @@ REPORTING_PROMPT = """
     {description_value}
 
     Read user messages to get context of the conversation and data to be used for information generation.
-    If the request is similer to previous one with #Description# replaced with actual values, use the api tool
+    If the request is has #Description#, replace it with actual values and use the api tool
     to call the api request.
 """
 API_PROMPT = """

@@ -179,38 +179,31 @@ class InterviewClient:
 
         for operation in operations_map:
             if operation.get("type") == "email":
-                if "email" not in user_message:
-                    user_message["email"] = []
-                user_message["email"].append({
-                    "receiver_name": operation.get("receiver_name"),
-                    "receiver_relation_to_interview": operation.get("receiver_relation_to_interview"),
-                    "template": operation.get("template")
-                })
+                if "email" not in user_message: user_message["email"] = []
+                
+                del operation["type"]
+                user_message["email"].append(operation)
                 user_message["attachment"] = "Generate Evaluation PDF"
             elif operation.get("type") == "whatsapp":
-                if "whatsapp" not in user_message:
-                    user_message["whatsapp"] = []
-                user_message["whatsapp"].append({
-                    "receiver_name": operation.get("receiver_name"),
-                    "receiver_relation_to_interview": operation.get("receiver_relation_to_interview"),
-                    "template": operation.get("template")
-                })
+                if "whatsapp" not in user_message: user_message["whatsapp"] = []
+                
+                del operation["type"]
+                user_message["whatsapp"].append(operation)
                 user_message["attachment"] = "Generate Evaluation PDF"
             elif operation.get("type") == "api":
-                required_values = {"endpoint": operation.get("endpoint")}
-
-                for key, value in operation.get("body", {}).items():
-                    value = value.strip()
-
-                    if value.startswith("#Description#") and value.endswith("#Description#"):
-                        required_values[key] = value
-                
-                if "description_value" not in user_message:
-                    user_message["description_value"] = []
-                user_message["description_value"].append(required_values)
-
                 if operation.get("attachment", "") == "#Evaluation PDF#":
                     user_message["attachment"] = "Generate Evaluation PDF"
+                if "api" not in user_message: user_message["api"] = []
+
+                user_message["api"].append({
+                    "endpoint": operation.get("endpoint"),
+                    "headers": operation.get("headers", {}),
+                    "body": operation.get("body", {}),
+                    "attachment": response_data["pdf"]["file_path"] if (
+                        operation.get("attachment", "") == "#Evaluation PDF#"
+                    ) else operation.get("attachment"),
+                    "method": operation.get("method", "POST")
+                })
         
         # Call llm for information
         response = interviewbot.invoke({
@@ -219,34 +212,10 @@ class InterviewClient:
         }, interview_config)
         response_data = json.loads(response["messages"][-1].content)
 
-        for operation in operations_map:
-            if operation.get("type") == "api":
-                message_to_call_api_tool = {
-                    "endpoint": operation.get("endpoint"),
-                    "headers": operation.get("headers", {}),
-                    "body": operation.get("body", {}),
-                    "attachment": response_data["pdf"]["file_path"] if (
-                        operation.get("attachment", "") == "#Evaluation PDF#"
-                    ) else operation.get("attachment"),
-                    "method": operation.get("method", "POST")
-                }
+        if response_data["error_report"]:
+            response_map["api_errors"] = response_map.get("api_errors", [])
+            response_map["api_errors"].append(response_data["error_report"])
 
-                for value in response_data["description_value"]:
-                    if value["endpoint"] == operation.get("endpoint"):
-                        message_to_call_api_tool["body"].update({
-                            value["key"]: value["value"]
-                        })
-
-                api_response = interviewbot.invoke({
-                    "messages": [HumanMessage(content=json.dumps(message_to_call_api_tool))],
-                    "phase": "reporting"
-                }, interview_config)
-                api_response_data = json.loads(api_response["messages"][-1].content)
-
-                if api_response_data["error_report"]:
-                    response_map["api_errors"] = response_map.get("api_errors", [])
-                    response_map["api_errors"].append(api_response_data["error_report"])
-        
         response_map["operations_results"] = response_data
         return response_map
 
