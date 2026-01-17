@@ -159,6 +159,17 @@ The agent will automatically load and use your custom tools.
 | **Persistence** | SQLite/Postgres/MongoDB | Manual implementation |
 | **Answer Timer** | Automatic expiry | Not included |
 
+
+## Robustness & Retries
+
+The agent is built for resilience with built-in retry policies spanning the entire interview lifecycle.
+
+- **Automatic Retries**: Critical graph nodes (perception, answer collection, reporting) attempt execution up to **3 times** on failure.
+- **Handling Transients**: Network blips or temporary LLM API errors are handled gracefully without crashing the interview state.
+- **Persistence**: When combined with a database (Postgres/MongoDB), the agent can recover from hard crashes by resuming from the last successful checkpoint.
+
+This ensures that long-running interviews or batched reporting operations are not lost due to minor sporadic errors.
+
 ## Documentation
 
 For detailed usage, API reference, and advanced configuration:
