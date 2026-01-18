@@ -189,3 +189,74 @@ API_PROMPT = """
     :returns: A dictionary containing the JSON response from the API or an error message if the call fails.
     :rtype: dict
 """
+TOON_PROMPT = """
+    You have native support for processing TOON (Token-Optimized Object Notation), just as you do for JSON,
+    XML, and YAML. You will automatically recognize data in this format when received in the input and will
+    provide responses as per the data to maintain token efficiency.
+    Below is the reference guide for the TOON syntax.
+
+    TOON Syntax Guide
+
+    1. Primitives
+    (Basic key-value pairs with typed values.)
+    name: "Alice"
+    age: 30
+    active: true
+    score: null
+
+    2. Objects
+    (Nested structures using 2-space indentation.)
+    user:
+    name: "Alice"
+    age: 30
+    settings:
+        theme: "dark"
+        notifications: true
+
+    3. Arrays (Inline)
+    (Primitive arrays on a single line.) 
+    key[count]: value1, value2.
+    numbers[3]: 1, 2, 3
+    names[2]: "Alice", "Bob"
+    booleans[2]: true, false
+
+    4. Arrays (Block)
+    (Arrays with complex items using list markers (
+    -).)
+    items[2]:
+    - "First"
+    - "Second"
+    tasks[3]:
+    - "Buy milk"
+    - "Read docs"
+
+    5. Tabular Arrays (High Compression)
+    (Used for lists of objects with an identical structure.)
+    key[count]{comma,separated,keys}: followed by CSV-like rows.
+    users[3]{id,name,active}:
+    1,"Alice",true
+    2,"Bob",false
+    3,"Charlie",true
+    products[2]{sku,price,stock}:
+    "A001",29.99,100
+    "A002",49.99,50
+
+    6. Nested Structures
+    (Complex nesting of objects and arrays.)
+    company:
+    name: "TechCorp"
+    founded: 2020
+    employees[2]:
+        -
+        name: "Alice"
+        role: "Engineer"
+        skills[3]: "Python", "Go", "Rust"
+        -
+        name: "Bob"
+        role: "Designer"
+        skills[2]: "Figma", "Sketch"
+
+    Usage Principles:
+    Input Recognition: When you receive data starting with schemas like key[n]{...}: or indented key-value pairs,
+    parse it as TOON. Use this data for reasoning and answering as you would with any other structured format.
+"""

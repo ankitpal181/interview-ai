@@ -2,6 +2,9 @@ import os, json, importlib
 from typing import Any
 from .schemas import InterviewState
 from .cache import cache
+from .settings import settings
+from langchain_core.messages import BaseMessage
+from toon_parse import ToonConverter
 
 
 # Graph Node Utilities(Planning Modules)
@@ -108,3 +111,25 @@ def fetch_user_tools() -> list:
         return getattr(module, 'user_tools', [])
     except Exception:
         return []
+
+def prepare_llm_input(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """
+    If toon fromatting is enabled in config, convert messages in messages list into TOON
+    to save LLM input token consumption.
+
+    Args:
+        messages: list[BaseMessage] = List of messages to be processed.
+    Returns:
+        llm_input_messages: list[BaseMessage] = Final messages list to be sent to LLM.
+    """
+    if not settings.use_toon_formatting: return messages
+    llm_input_messages = []
+
+    try:
+        for message in messages:
+            message.content = ToonConverter.from_json(message.content)
+            llm_input_messages.append(message)
+        
+        return llm_input_messages
+    except Exception:
+        return messages

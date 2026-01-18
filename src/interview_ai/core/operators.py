@@ -1,8 +1,10 @@
 import json
 from .llms import Model
 from .schemas import InterviewState, QuestionsSchema, EvaluationSchema, ReportingSchema
-from .prompts import INTERVIEWBOT_PROMPT, REPORTING_PROMPT, REPORTING_PROMPT_MAP
+from .prompts import INTERVIEWBOT_PROMPT, REPORTING_PROMPT, REPORTING_PROMPT_MAP, TOON_PROMPT
 from .tools import search_internet, generate_csv_tool, generate_pdf_tool, call_api_tool, user_tools
+from .utilities import prepare_llm_input
+from .settings import settings
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langgraph.prebuilt import ToolNode
 from langgraph.types import interrupt
@@ -67,14 +69,14 @@ def question_generation_function(state: InterviewState) -> dict:
     """
     try:
         messages = state["messages"]
-        questions_data = questioner_tools_operator.model.invoke(messages)
+        questions_data = questioner_tools_operator.model.invoke(prepare_llm_input(messages))
 
         if hasattr(questions_data, "tool_calls") and len(questions_data.tool_calls) > 0:
             return {"messages": [questions_data]}
         else:
             messages.append(questions_data)
 
-        questions = questioner_model.model.invoke(messages)
+        questions = questioner_model.model.invoke(prepare_llm_input(messages))
         questions_json = questions.model_dump_json(indent = 2)
 
         return {"messages": [AIMessage(questions_json)], "questions": questions.questions}
@@ -117,7 +119,7 @@ def evaluation_function(state: InterviewState) -> dict:
     """
     try:
         messages = state["messages"]
-        evaluation = evaluator_model.model.invoke(messages)
+        evaluation = evaluator_model.model.invoke(prepare_llm_input(messages))
         evaluation_json = evaluation.model_dump_json(indent = 2)
 
         return {"messages": [AIMessage(evaluation_json)]}
@@ -146,6 +148,7 @@ def interview_perception_function(state: InterviewState) -> dict:
     ))
 
     if system_prompt: state["messages"].insert(0, system_prompt)
+    if settings.use_toon_formatting: state["messages"].insert(1, SystemMessage(TOON_PROMPT))
 
     return state
 
@@ -178,14 +181,14 @@ def reporting_function(state: InterviewState) -> dict:
     """
     try:
         messages = state["messages"]
-        response_data = reporting_tools_operator.model.invoke(messages)
+        response_data = reporting_tools_operator.model.invoke(prepare_llm_input(messages))
 
         if hasattr(response_data, "tool_calls") and len(response_data.tool_calls) > 0:
             return {"messages": [response_data]}
         else:
             messages.append(response_data)
 
-        response = reporting_model.model.invoke(messages)
+        response = reporting_model.model.invoke(prepare_llm_input(messages))
         response_json = response.model_dump_json(indent = 2)
 
         return {"messages": [AIMessage(response_json)]}
@@ -213,5 +216,6 @@ def reporting_perception_function(state: InterviewState) -> dict:
     ))
 
     if system_prompt: state["messages"].insert(-1, system_prompt)
+    if settings.use_toon_formatting: state["messages"].insert(-1, SystemMessage(TOON_PROMPT))
 
     return state

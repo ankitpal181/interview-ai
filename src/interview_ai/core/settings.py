@@ -27,6 +27,7 @@ class Settings(BaseSettings):
         max_intro_questions (int): Maximum number of introduction questions.
         internet_search (str): Internet search tool name.
         database_name (DatabaseName): Database name.
+        use_toon_formatting (bool): Use TOON formatting for LLM inputs.
     """
     model_config = SettingsConfigDict()
 
@@ -45,6 +46,7 @@ class Settings(BaseSettings):
 
     # GRAPH
     max_intro_questions: int = Field(default=3)
+    use_toon_formatting: bool = Field(default=False)
 
     # TOOLS
     internet_search: str = Field(default="duckduckgo")

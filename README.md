@@ -69,6 +69,20 @@ MONGODB_CONNECTION_URI="mongodb://..."
 
 > **Note**: For local models, set `llm_model_name` to a Hugging Face model name (e.g., `meta-llama/Llama-2-7b-chat-hf`). The agent will handle downloading and setting it up locally (ensure API keys are blank in `.env`).
 
+## Token Optimization (New)
+
+Interview AI now integrates **TOON (Token-Optimized Object Notation)** to significantly reduce token usage and cost for LLM calls.
+
+- **What it does**: Automatically converts JSON data in prompts to the TOON format, which is more concise and token-efficient.
+- **Benefits**: Reduces API costs and latency, especially for long interview contexts.
+- **Usage**: Enable it in your `interview_ai/config.json`:
+
+```json
+{
+  "use_toon_formatting": true
+}
+```
+
 ## Quick Start
 
 ```python
