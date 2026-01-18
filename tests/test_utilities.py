@@ -174,3 +174,62 @@ class TestCacheOperations:
         
         result = cache.get("unknown_thread_xyz")
         assert result is None
+
+
+class TestPrepareLLMInput:
+    """Test suite for prepare_llm_input function."""
+
+    def test_returns_same_messages_when_config_false(self):
+        """Test that it returns original messages when use_toon_formatting is False."""
+        # Load utilities module
+        utilities = _import_module("interview_ai.core.utilities", "utilities.py")
+        
+        # Configure settings directly on the imported module
+        utilities.settings.use_toon_formatting = False
+        
+        mock_msg = MagicMock()
+        mock_msg.content = '{"key": "value"}'
+        messages = [mock_msg]
+        
+        result = utilities.prepare_llm_input(messages)
+        
+        assert result == messages
+        assert result[0].content == '{"key": "value"}'
+
+    def test_converts_to_toon_when_config_true(self):
+        """Test that it converts content to TOON when use_toon_formatting is True."""
+        utilities = _import_module("interview_ai.core.utilities", "utilities.py")
+        utilities.settings.use_toon_formatting = True
+        
+        # Mock ToonConverter in the imported module
+        mock_converter = MagicMock()
+        mock_converter.from_json.return_value = 'key: "value"'
+        utilities.ToonConverter = mock_converter
+        
+        mock_msg = MagicMock()
+        mock_msg.content = '{"key": "value"}'
+        messages = [mock_msg]
+        
+        result = utilities.prepare_llm_input(messages)
+        
+        mock_converter.from_json.assert_called_with('{"key": "value"}')
+        assert result[0].content == 'key: "value"'
+
+    def test_handles_conversion_error(self):
+        """Test that it returns original messages on conversion error."""
+        utilities = _import_module("interview_ai.core.utilities", "utilities.py")
+        utilities.settings.use_toon_formatting = True
+        
+        mock_converter = MagicMock()
+        mock_converter.from_json.side_effect = Exception("Conversion Error")
+        utilities.ToonConverter = mock_converter
+        
+        mock_msg = MagicMock()
+        mock_msg.content = '{"key": "value"}'
+        messages = [mock_msg]
+        
+        result = utilities.prepare_llm_input(messages)
+        
+        assert result == messages
+        assert result[0].content == '{"key": "value"}'
+

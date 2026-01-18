@@ -44,6 +44,7 @@ mock_prompts.REPORTING_PROMPT_MAP = {
     "description_value": "Description_Instructions"
 }
 mock_prompts.INTERVIEWBOT_PROMPT = "InterviewBot Prompt {role}"
+mock_prompts.TOON_PROMPT = "TOON Syntax Guide"
 sys.modules["interview_ai.core.prompts"] = mock_prompts
 
 # Mock tools with proper name attributes for ToolNode
@@ -70,6 +71,7 @@ sys.modules["interview_ai.core.schemas"] = MagicMock()
 # Now import operators
 from interview_ai.core.operators import (
     question_generation_function, 
+    interview_perception_function,
     reporting_perception_function,
     questioner_tools_operator,
     reporting_tools_operator
@@ -128,18 +130,87 @@ class TestReportingPerceptionFunction:
     
     def test_always_includes_description_value(self):
         """Test that description_value is included even if not in reporting data."""
-        # reporting_data without description_value
-        reporting_data = {"pdf": True} 
-        last_message = AIMessage(content=json.dumps(reporting_data))
-        state = {"messages": [last_message]}
+        # Import operators to access its settings instance
+        import interview_ai.core.operators as ops
         
-        result = reporting_perception_function(state)
+        with patch.object(ops.settings, 'use_toon_formatting', False):
+            # reporting_data without description_value
+            reporting_data = {"pdf": True} 
+            last_message = AIMessage(content=json.dumps(reporting_data))
+            state = {"messages": [last_message]}
+            
+            result = reporting_perception_function(state)
+            
+            # Check the inserted system prompt
+            # It's inserted at -1 (before the last message)
+            # So messages list size increases by 1
+            messages = result["messages"]
+            system_msg = messages[-2] # index -1 was the AIMessage
+            
+            assert isinstance(system_msg, SystemMessage)
+            assert "Description_Instructions" in system_msg.content
+
+
+    def test_includes_toon_prompt_when_enabled(self):
+        """Test that TOON_PROMPT is included when use_toon_formatting is True."""
+        import interview_ai.core.operators as ops
         
-        # Check the inserted system prompt
-        # It's inserted at -1 (before the last message)
-        # So messages list size increases by 1
-        messages = result["messages"]
-        system_msg = messages[-2] # index -1 was the AIMessage
+        with patch.object(ops.settings, 'use_toon_formatting', True):
+            reporting_data = {"pdf": True}
+            last_message = AIMessage(content=json.dumps(reporting_data))
+            state = {"messages": [last_message]}
+            
+            result = reporting_perception_function(state)
+            
+            messages = result["messages"]
+            assert len(messages) == 3
+            
+            from interview_ai.core.operators import TOON_PROMPT
+            
+            toon_msg = messages[-2]
+            assert isinstance(toon_msg, SystemMessage)
+            assert toon_msg.content == TOON_PROMPT
+
+
+class TestInterviewPerceptionFunction:
+    """Test suite for interview_perception_function."""
+
+    def test_includes_toon_prompt_when_enabled(self):
+        """Test that TOON_PROMPT is included when use_toon_formatting is True."""
+        import interview_ai.core.operators as ops
         
-        assert isinstance(system_msg, SystemMessage)
-        assert "Description_Instructions" in system_msg.content
+        with patch.object(ops.settings, 'use_toon_formatting', True):
+            state = {
+                "rules": {}, 
+                "candidate_information": {"role": "dev", "companies": ""},
+                "messages": []
+            }
+            
+            result = interview_perception_function(state)
+            
+            messages = result["messages"]
+            assert len(messages) == 2
+            
+            from interview_ai.core.operators import TOON_PROMPT
+            
+            toon_msg = messages[1]
+            assert isinstance(toon_msg, SystemMessage)
+            assert toon_msg.content == TOON_PROMPT
+
+    def test_excludes_toon_prompt_when_disabled(self):
+        """Test that TOON_PROMPT is NOT included when use_toon_formatting is False."""
+        import interview_ai.core.operators as ops
+        
+        with patch.object(ops.settings, 'use_toon_formatting', False):
+            state = {
+                "rules": {}, 
+                "candidate_information": {"role": "dev", "companies": ""},
+                "messages": []
+            }
+            
+            result = interview_perception_function(state)
+            
+            messages = result["messages"]
+            assert len(messages) == 1
+        # only system prompt at 0
+
